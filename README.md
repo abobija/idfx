@@ -2,7 +2,7 @@
 
 While there is [no support for USB devices](https://github.com/microsoft/WSL/issues/4322), this tool comes to help you to flash and monitor your [ESP-IDF](https://github.com/espressif/esp-idf) applications on the [WSL2](https://docs.microsoft.com/en-us/windows/wsl/compare-versions).
 
-> **Info:**<br>Tested only on [Ubuntu 20.04 LTS](https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71) distribution, for now.
+> **Info:**<br>Tested on [Ubuntu 20.04 LTS](https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71) distribution.
 
 # Preview
 
