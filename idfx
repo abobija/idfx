@@ -15,43 +15,38 @@
 #	Alija Bobija (https://github.com/abobija | https://abobija.com)
 #
 # Usage:
-#	idfx COMMAND PORT [verbose]
+#	idfx COMMAND PORT
 
-if [ $# -lt 2 ] || [[ "$1" != "flash" && "$1" != "monitor" ]]; then
-	echo "Error: Wrong format"
-	
-	echo "Usage: idfx COMMAND PORT
+if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
+	echo 'Error: Wrong format'
+	echo 'Usage:
+	idfx COMMAND PORT
 	
 	Commands:
 		flash     Flash the project.
 		monitor   Display serial output.
 		
 	Example:
-		idfx flash COM6
-		idfx monitor COM6
-	"
+		idfx flash COM2
+		idfx monitor COM2'
+	echo
+	
 	exit
 fi
 
-if [[ "$3" == "v" || "$3" == "verbose" ]]; then
-	verbose=true
-else
-	verbose=false
-fi
-
-cmake_project_file="CMakeLists.txt"
+cmake_project_file='CMakeLists.txt'
 
 if ! [ -f "$cmake_project_file" ]; then
 	echo "Error: Cannot find $cmake_project_file. Are you sure that you are in the project folder?"
 	exit
 fi
 
-config_env_file="build/config.env"
+config_env_file='build/config.env'
 
 if ! [ -f "$config_env_file" ]; then
 	echo "Error: Cannot find $config_env_file"
-	echo "Make sure to first build the project with the next command
-	idf.py build"
+	echo 'Make sure to first build the project with the next command
+	idf.py build'
 	exit
 fi
 
@@ -62,65 +57,57 @@ idf_target=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $config_env_file)
 # wsl_root will be: \\wsl$\<distribution_name>
 # and wsl_home will be: \\wsl$\<distribution_name>\home\<linux_user>
 
-wsl_root=$(powershell.exe -Command "(Get-Location).Path | Convert-Path")
-home_index=$(echo $wsl_root | grep -b -o "\\home" | sed 's/:.*$//')
+wsl_pwd=$(powershell.exe -Command '(Get-Location).Path | Convert-Path' | tr -d '\r' | tr -d '\n')
+wsl_root=$wsl_pwd
+home_index=$(echo $wsl_root | grep -b -o '\home' | sed 's/:.*$//')
 wsl_root=${wsl_root:0:$home_index-1}
 wsl_home="$wsl_root$HOME"
 
 # Ckecking if python and esptool package are installed on the windows
 
 if ! command -v python.exe &> /dev/null; then
-	echo "Python needs to be installed on the Windows"
+	echo 'Python needs to be installed on the Windows'
 	exit
 fi
 
-if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esptool") else 0)') != "1"* ]]; then
+if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esptool") else 0)') != '1'* ]]; then
 	echo 'Python package "esptool" needs to be installed on the Windows.'
 	read -p 'Would you like to install it now (y/n): ' answer
 	
-	if [[ "$answer" == "y" ]]; then
-		echo "Ok. Installing esptool..."
+	if [[ "$answer" == 'y' ]]; then
+		echo 'Ok. Installing esptool...'
 		pip.exe install esptool
 	else
-		echo "Sorry but esptool needs to be installed"
+		echo 'Sorry but esptool needs to be installed'
 		exit
 	fi
 fi
 
-if [ "$1" = "flash" ]; then
+if [ "$1" = 'flash' ]; then
 	flash_cmd=$((echo "esptool.py
 		-p $2
 		-b 460800 --before default_reset --after hard_reset
 		--chip $idf_target
 		write_flash "; cat build/flash_args) | tr '\n' ' ')
 	
-	if $verbose; then
-		echo $flash_cmd
-	fi
-	
 	powershell.exe -Command "cd build ; $flash_cmd"
-elif [ "$1" = "monitor" ]; then
-	idf_monitor_relative_path="bin/idf_monitor.py"
+elif [ "$1" = 'monitor' ]; then
+	idf_monitor_relative_path='bin/idf_monitor.py'
 	
 	# Check if idf_monitor.py script exists
 	# and if it does not exist it will be downloaded automatically from the
 	# official ESP-IDF github repository
 	
 	if ! [ -f "$HOME/$idf_monitor_relative_path" ]; then
-		echo "Downloading idf_monitor.py from the official ESP-IDF repository..."
+		echo 'Downloading idf_monitor.py from the official ESP-IDF repository...'
 		curl -L -o "$HOME/$idf_monitor_relative_path" https://raw.githubusercontent.com/espressif/esp-idf/master/tools/idf_monitor.py
 		
 		if [ $? -ne 0 ]; then
-			echo "Error: Cannot download idf_monitor.py"
+			echo 'Error: Cannot download idf_monitor.py'
 			exit
 		fi
 	fi
 	
-	monitor_cmd=$(echo "python $wsl_home/$idf_monitor_relative_path -p $2 $project_name.elf")
-	
-	if $verbose; then
-		echo $monitor_cmd
-	fi
-	
-	powershell.exe -Command "cd build ; $monitor_cmd"
+	monitor_cmd=$(echo "python.exe $wsl_home/$idf_monitor_relative_path -p $2 $wsl_pwd/build/$project_name.elf")
+	powershell.exe -Command "$monitor_cmd"
 fi

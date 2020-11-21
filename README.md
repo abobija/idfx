@@ -11,14 +11,13 @@ While there is [no support for USB devices](https://github.com/microsoft/WSL/iss
 # Usage
 
 ```sh
-idfx COMMAND PORT [verbose]
+idfx COMMAND PORT
 ```
 
 - `COMMAND`s
     - `flash` - Flash the project.
     - `monitor` - Display serial output.
 - `PORT` - Serial COM Port on the Windows. Use Device Manager to find your port.
-- *`verbose`* - Provide this flag (optionally) if you want to see more output in terminal while you flash and monitor your app.
 
 # Installation
 
@@ -53,7 +52,6 @@ chmod u+x idfx
 | ------------- | ------------- |
 | `idfx flash COM2`  | Flashing project using port `COM2` |
 | `idfx monitor COM2`  | Display serial output on the port `COM2` |
-| `idfx flash COM2 verbose` | Flash project using port `COM2` in verbose mode. |
 
 # Author
 
