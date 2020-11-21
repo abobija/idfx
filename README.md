@@ -1,6 +1,6 @@
 # idfx :zap:
 
-While there is [no support for USB devices](https://github.com/microsoft/WSL/issues/4322) for now, this tool comes to help you to flash and monitor your [ESP-IDF](https://github.com/espressif/esp-idf) applications on the [WSL2](https://docs.microsoft.com/en-us/windows/wsl/compare-versions).
+While there is [no support for USB devices on WSL2](https://github.com/microsoft/WSL/issues/4322) for now, this tool comes to help you to flash and monitor your [ESP-IDF](https://github.com/espressif/esp-idf) applications on the [WSL2](https://docs.microsoft.com/en-us/windows/wsl/compare-versions).
 
 > **Info:**<br>Tested on [Ubuntu 20.04 LTS](https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71) distribution.
 
