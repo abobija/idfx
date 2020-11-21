@@ -1,5 +1,22 @@
 #!/bin/bash
 
+# Title:
+#	idfx
+#
+# Description:
+#	This script is part of github repository https://github.com/abobija/idfx
+#	There you can find more about this script, as well as latest updates
+#
+#	While there is no support for USB devices for now,
+#	this tool comes to help you to flash and monitor
+#	your ESP-IDF applications on the WSL2.
+#
+# Author:
+#	Alija Bobija (https://github.com/abobija | https://abobija.com)
+#
+# Usage:
+#	idfx COMMAND PORT [verbose]
+
 if [ $# -lt 2 ] || [[ "$1" != "flash" && "$1" != "monitor" ]]; then
 	echo "Error: Wrong format"
 	
