@@ -25,14 +25,13 @@ idfx COMMAND PORT [monitor]
 > **Note:**<br>As a prerequisite for using this tool, [Python :snake:](https://www.python.org) needs to be installed on the Windows.
 
 ```sh
-# Download idfx and make it as executable
+# Download idfx
 
 curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
 
-# Now you can go inside of your project directory, build project, and then execute
+# Now go inside of your project directory, and flash/monitor with next command
 
-# idfx flash (PORT)
-# idfx monitor (PORT)
+idfx flash (PORT) monitor
 ```
 
 # Examples
