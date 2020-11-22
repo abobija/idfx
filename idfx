@@ -34,6 +34,11 @@ if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
 	exit
 fi
 
+if [[ -z "${IDF_PATH}" ]]; then
+	echo "Error: IDF_PATH environment variable is not set"
+	exit
+fi
+
 cmake_project_file='CMakeLists.txt'
 
 if ! [ -f "$cmake_project_file" ]; then
