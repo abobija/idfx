@@ -15,7 +15,7 @@
 #	Alija Bobija (https://github.com/abobija | https://abobija.com)
 #
 # Usage:
-#	idfx COMMAND PORT
+#	idfx COMMAND PORT [monitor]
 
 if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
 	echo 'Error: Wrong format'
@@ -27,8 +27,8 @@ if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
 		monitor   Display serial output.
 		
 	Example:
-		idfx flash COM2
-		idfx monitor COM2'
+		idfx flash COM6
+		idfx monitor COM6'
 	echo
 	
 	exit
@@ -37,7 +37,8 @@ fi
 cmake_project_file='CMakeLists.txt'
 
 if ! [ -f "$cmake_project_file" ]; then
-	echo "Error: Cannot find $cmake_project_file. Are you sure that you are in the project folder?"
+	echo "Error: Cannot find $cmake_project_file."
+	echo "Are you sure that you are in the project folder?"
 	exit
 fi
 
@@ -91,7 +92,9 @@ if [ "$1" = 'flash' ]; then
 		write_flash "; cat build/flash_args) | tr '\n' ' ')
 	
 	powershell.exe -Command "cd build ; $flash_cmd"
-elif [ "$1" = 'monitor' ]; then
+fi
+
+if [[ "$1" = 'monitor' ]] || [[ $# -gt 2 && "$3" = 'monitor' ]]; then
 	idf_monitor_relative_path='bin/idf_monitor.py'
 	
 	# Check if idf_monitor.py script exists

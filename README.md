@@ -11,7 +11,7 @@ While there is [no support for USB devices on WSL2](https://github.com/microsoft
 # Usage
 
 ```sh
-idfx COMMAND PORT
+idfx COMMAND PORT [monitor]
 ```
 
 - `COMMAND`s
@@ -52,6 +52,7 @@ chmod u+x idfx
 | ------------- | ------------- |
 | `idfx flash COM2`  | Flashing project using port `COM2` |
 | `idfx monitor COM2`  | Display serial output on the port `COM2` |
+| `idfx flash COM2 monitor` | Flash project and display serial output, using port `COM2` |
 
 # Author
 
