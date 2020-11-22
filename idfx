@@ -95,22 +95,14 @@ if [ "$1" = 'flash' ]; then
 fi
 
 if [[ "$1" = 'monitor' ]] || [[ $# -gt 2 && "$3" = 'monitor' ]]; then
-	idf_monitor_relative_path='bin/idf_monitor.py'
+	idf_monitor_path="$IDF_PATH/tools/idf_monitor.py"
 	
-	# Check if idf_monitor.py script exists
-	# and if it does not exist it will be downloaded automatically from the
-	# official ESP-IDF github repository
-	
-	if ! [ -f "$HOME/$idf_monitor_relative_path" ]; then
-		echo 'Downloading idf_monitor.py from the official ESP-IDF repository...'
-		curl -L -o "$HOME/$idf_monitor_relative_path" https://raw.githubusercontent.com/espressif/esp-idf/master/tools/idf_monitor.py
-		
-		if [ $? -ne 0 ]; then
-			echo 'Error: Cannot download idf_monitor.py'
-			exit
-		fi
+	if ! [ -f "$idf_monitor_path" ]; then
+		echo "Error: Cannot find $idf_monitor_path"
+		exit
 	fi
 	
-	monitor_cmd=$(echo "python.exe $wsl_home/$idf_monitor_relative_path -p $2 $wsl_pwd/build/$project_name.elf")
+	monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path -p $2 $wsl_pwd/build/$project_name.elf")
+	
 	powershell.exe -Command "$monitor_cmd"
 fi
