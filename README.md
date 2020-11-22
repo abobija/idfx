@@ -22,17 +22,13 @@ idfx COMMAND PORT [monitor]
 
 # Installation
 
-> **Note:**<br>As a prerequisite for using this tool, [Python :snake:](https://www.python.org) needs to be installed on the Windows.
+Execute next command inside of your WSL to install `idfx`
 
 ```sh
-# Download idfx
-
 curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
-
-# Now go inside of your project directory, and flash/monitor with next command
-
-idfx flash (PORT) monitor
 ```
+
+> **Note:**<br>As a prerequisite for using this tool, [Python :snake:](https://www.python.org) needs to be installed on the Windows.
 
 # Examples
 
