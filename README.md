@@ -18,6 +18,7 @@ idfx COMMAND PORT [monitor]
     - `flash` - Flash the project.
     - `monitor` - Display serial output.
 - `PORT` - Serial COM Port on the Windows. Use Device Manager to find your port.
+- `monitor` - This argument can be provided if there is need to flash and monitor with single command (check [examples](#examples)).
 
 # Installation
 
