@@ -17,6 +17,26 @@
 # Usage:
 #	idfx COMMAND PORT [monitor]
 
+if [ $# -eq 1 ]; then
+	SCRIPT_DIR=$(dirname $0)
+	
+	if [[ "$1" == 'install' ]]; then
+		# Check if script folder is on the PATH
+		if [[ ":$PATH:" != *":$SCRIPT_DIR:"* ]]; then
+			# Add script folder to the PATH
+			PATH="$SCRIPT_DIR:${PATH}"
+		
+			echo "idfx successfully installed"
+			echo "now you can go inside of project folder and flash/monitor with next command"
+			echo "	idfx flash (PORT) monitor"
+		else
+			echo "idfx is already installed"
+		fi
+		
+		exit
+	fi
+fi
+
 if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
 	echo 'Error: Wrong format'
 	echo 'Usage:
