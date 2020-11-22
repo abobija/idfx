@@ -29,13 +29,9 @@ idfx COMMAND PORT [monitor]
 
 mkdir -p ~/bin && cd ~/bin
 
-# Download idfx into ~/bin
+# Download idfx and make it executable
 
-curl -L -o idfx https://raw.githubusercontent.com/abobija/idfx/main/idfx
-
-# Mark idfx as executable
-
-chmod u+x idfx
+curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o idfx && chmod u+x idfx
 
 # Add ~/bin to PATH by sourcing ~/.profile script (inside of profile script there is command that adds ~/bin to PATH only if that dir exists)
 
