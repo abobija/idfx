@@ -33,9 +33,9 @@ mkdir -p ~/bin && cd ~/bin
 
 curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o idfx && chmod u+x idfx
 
-# Add ~/bin to PATH by sourcing ~/.profile script (inside of profile script there is command that adds ~/bin to PATH only if that dir exists)
+# Add ~/bin to PATH (if it is not already on the PATH)
 
-. ~/.profile
+[[ ":$PATH:" != *":$HOME/bin:"* ]] && PATH="$HOME/bin:${PATH}"
 
 # Now you can go inside of your project directory, build project, and then execute
 
