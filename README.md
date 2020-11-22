@@ -25,17 +25,9 @@ idfx COMMAND PORT [monitor]
 > **Note:**<br>As a prerequisite for using this tool, [Python :snake:](https://www.python.org) needs to be installed on the Windows.
 
 ```sh
-# Create ~/bin directory (if it doesn't exist) and cd into it
+# Download idfx and make it as executable
 
-mkdir -p ~/bin && cd ~/bin
-
-# Download idfx and make it executable
-
-curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o idfx && chmod u+x idfx
-
-# Add ~/bin to PATH (if it is not already on the PATH)
-
-[[ ":$PATH:" != *":$HOME/bin:"* ]] && PATH="$HOME/bin:${PATH}"
+curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
 
 # Now you can go inside of your project directory, build project, and then execute
 
