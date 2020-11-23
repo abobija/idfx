@@ -6,10 +6,6 @@ While there is [no support for USB devices on WSL2](https://github.com/microsoft
 
 > **Note:**<br>As a prerequisite for using this tool, [Python :snake:](https://www.python.org) needs to be installed on the Windows.
 
-# Preview
-
-![idfx preview](preview.gif)
-
 # Usage
 
 ```sh
@@ -37,6 +33,10 @@ curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o $HOME/.local
 | `idfx flash COM2`  | Flashing project using port `COM2` |
 | `idfx monitor COM2`  | Display serial output on the port `COM2` |
 | `idfx flash COM2 monitor` | Flash project and display serial output, using port `COM2` |
+
+# Preview
+
+![idfx preview](preview.gif)
 
 # Author
 
