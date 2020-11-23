@@ -34,7 +34,7 @@ curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o $HOME/.local
 | `idfx monitor COM2`  | Display serial output on the port `COM2` |
 | `idfx flash COM2 monitor` | Flash project and display serial output, using port `COM2` |
 
-# [How to install ESP-IDF on WSL2?](https://gist.github.com/abobija/2f11d1b2c7cb079bec4df6e2348d969f)
+# [How to install ESP-IDF on WSL2 and build/flash/monitor?](https://gist.github.com/abobija/2f11d1b2c7cb079bec4df6e2348d969f)
 
 # Preview
 
