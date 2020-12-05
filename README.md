@@ -26,6 +26,10 @@ Execute next command inside of your WSL to install `idfx`
 wget https://raw.githubusercontent.com/abobija/idfx/main/idfx -O $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
 ```
 
+# Supported ESP-IDF versions
+
+idfx can work with ESP IDF 4.0 and above.
+
 # Examples
 
 | Command  | Description |
