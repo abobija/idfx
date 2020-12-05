@@ -23,7 +23,7 @@ idfx COMMAND PORT [monitor]
 Execute next command inside of your WSL to install `idfx`
 
 ```sh
-curl -L https://raw.githubusercontent.com/abobija/idfx/main/idfx -o $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
+wget https://raw.githubusercontent.com/abobija/idfx/main/idfx -O $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
 ```
 
 # Examples
