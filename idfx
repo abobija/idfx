@@ -94,7 +94,7 @@ if [ "$1" = 'flash' ]; then
 		-p $2
 		-b 460800 --before default_reset --after hard_reset
 		--chip $idf_target
-		write_flash "; cat build/flash_args) | tr '\n' ' ')
+		write_flash "; cat build/flash_project_args) | tr '\n' ' ')
 	
 	powershell.exe -Command "cd build ; $flash_cmd"
 fi
