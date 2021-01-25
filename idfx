@@ -56,7 +56,7 @@ if ! [ -f "$config_env_file" ]; then
 	exit
 fi
 
-project_name=$(grep -oP '(?<=project\().*(?=\))' $cmake_project_file)
+project_name=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $cmake_project_file)
 idf_target=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $config_env_file)
 
 # Constructing wsl_root and wsl_home variables
