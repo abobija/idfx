@@ -59,16 +59,6 @@ fi
 project_name=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $cmake_project_file)
 idf_target=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $config_env_file)
 
-# Constructing wsl_root and wsl_home variables
-# wsl_root will be: \\wsl$\<distribution_name>
-# and wsl_home will be: \\wsl$\<distribution_name>\home\<linux_user>
-
-wsl_pwd=$(powershell.exe -Command '(Get-Location).Path | Convert-Path' | tr -d '\r' | tr -d '\n')
-wsl_root=$wsl_pwd
-home_index=$(echo $wsl_root | grep -b -o '\home' | sed 's/:.*$//')
-wsl_root=${wsl_root:0:$home_index-1}
-wsl_home="$wsl_root$HOME"
-
 # Ckecking if python and esptool package are installed on the windows
 
 if ! command -v python.exe &> /dev/null; then
@@ -107,7 +97,18 @@ if [[ "$1" = 'monitor' ]] || [[ $# -gt 2 && "$3" = 'monitor' ]]; then
 		exit
 	fi
 	
-	monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path -p $2 $wsl_pwd/build/$project_name.elf")
+	wsl_root="\\\\wsl\$\\$WSL_DISTRO_NAME"
+	wsl_pwd=$(pwd)
+	elf_path="/build/$project_name.elf"
 	
+	if [[ ${wsl_pwd:1:3} == 'mnt' ]]; then
+		#win_root=$(powershell.exe -Command '(Get-Location).Path | Convert-Path' | tr -d '\r' | tr -d '\n')
+		win_root="${wsl_pwd:5:1}:${wsl_pwd:6}"
+		elf_path="$win_root$elf_path"
+	else
+		elf_path="$wsl_root$wsl_pwd$elf_path"
+	fi
+		
+	monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path -p $2 $elf_path")
 	powershell.exe -Command "$monitor_cmd"
 fi
