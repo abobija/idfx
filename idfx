@@ -12,7 +12,7 @@
 #	your ESP-IDF applications on the WSL2.
 #
 # Author:
-#	Alija Bobija (https://github.com/abobija | https://abobija.com)
+#	Alija Bobija (https://abobija.com | https://github.com/abobija)
 #
 # Usage:
 #	idfx COMMAND PORT [monitor]
@@ -26,9 +26,10 @@ if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
 		flash     Flash the project.
 		monitor   Display serial output.
 		
-	Example:
+	Examples:
 		idfx flash COM6
-		idfx monitor COM6'
+		idfx monitor COM6
+		idfx flash COM6 monitor'
 	echo
 	
 	exit
@@ -97,18 +98,29 @@ if [[ "$1" = 'monitor' ]] || [[ $# -gt 2 && "$3" = 'monitor' ]]; then
 		exit
 	fi
 	
+	if [[ -z "${WSL_DISTRO_NAME}" ]]; then
+		echo "Error: WSL_DISTRO_NAME environment variable is not set"
+		exit
+	fi
+	
 	wsl_root="\\\\wsl\$\\$WSL_DISTRO_NAME"
 	wsl_pwd=$(pwd)
 	elf_path="/build/$project_name.elf"
 	
 	if [[ ${wsl_pwd:1:3} == 'mnt' ]]; then
-		#win_root=$(powershell.exe -Command '(Get-Location).Path | Convert-Path' | tr -d '\r' | tr -d '\n')
 		win_root="${wsl_pwd:5:1}:${wsl_pwd:6}"
 		elf_path="$win_root$elf_path"
 	else
 		elf_path="$wsl_root$wsl_pwd$elf_path"
 	fi
-		
-	monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path -p $2 $elf_path")
+	
+	additional_args=''
+	disable_addr_dec='disable-address-decoding'
+	
+	if grep -qF "$disable_addr_dec" "$idf_monitor_path"; then
+		additional_args+=" --$disable_addr_dec"
+	fi
+	
+	monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path $additional_args -p $2 $elf_path")
 	powershell.exe -Command "$monitor_cmd"
 fi
