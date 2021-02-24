@@ -17,7 +17,113 @@
 # Usage:
 #	idfx COMMAND PORT [monitor]
 
-if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
+IDFX_OK=0
+IDFX_FAIL=1
+IDFX_ENVIRONMENT_STATUS=$IDFX_FAIL
+IDFX_CMAKE_PROJECT_FILE='CMakeLists.txt'
+IDFX_CONFIG_ENV_FILE='build/config.env'
+IDFX_PROJECT_NAME=''
+IDFX_TARGET=''
+
+idfx_environment_check() {
+	if [ "$IDFX_ENVIRONMENT_STATUS" -eq "$IDFX_OK" ]; then return $IDFX_OK; fi
+
+	if [[ -z "${WSL_DISTRO_NAME}" ]]; then
+		echo "Error: WSL_DISTRO_NAME environment variable is not set"
+		return $IDFX_FAIL
+	fi
+
+	if [[ -z "${IDF_PATH}" ]]; then
+		echo "Error: IDF_PATH environment variable is not set"
+		return $IDFX_FAIL
+	fi
+
+	if ! [ -f "$IDFX_CMAKE_PROJECT_FILE" ]; then
+		echo "Error: Cannot find $IDFX_CMAKE_PROJECT_FILE."
+		echo "Are you sure that you are in the project folder?"
+		return $IDFX_FAIL
+	fi
+
+	if ! [ -f "$IDFX_CONFIG_ENV_FILE" ]; then
+		echo "Error: Cannot find $IDFX_CONFIG_ENV_FILE"
+		echo 'Make sure to first build the project with the next command
+		idf.py build'
+		return $IDFX_FAIL
+	fi
+
+	if ! command -v python.exe &> /dev/null; then
+		echo 'Python needs to be installed on the Windows'
+		return $IDFX_FAIL
+	fi
+
+	if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esptool") else 0)') != '1'* ]]; then
+		echo 'Python package "esptool" needs to be installed on the Windows.'
+		read -p 'Would you like to install it now (y/n): ' answer
+		
+		if [[ "$answer" == 'y' ]]; then
+			echo 'Ok. Installing esptool...'
+			pip.exe install esptool
+		else
+			echo 'Sorry but esptool needs to be installed'
+			return $IDFX_FAIL
+		fi
+	fi
+
+	IDFX_PROJECT_NAME=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $IDFX_CMAKE_PROJECT_FILE)
+	IDFX_TARGET=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $IDFX_CONFIG_ENV_FILE)
+	IDFX_ENVIRONMENT_STATUS=$IDFX_OK
+
+	return $IDFX_OK
+}
+
+idfx_build() {
+	idf.py build
+}
+
+idfx_flash() {
+	if ! idfx_environment_check; then return $IDFX_FAIL; fi
+
+	local flash_cmd=$((echo "esptool.py -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
+	powershell.exe -Command "cd build ; $flash_cmd"
+
+	return $IDFX_OK
+}
+
+idfx_monitor() {
+	if ! idfx_environment_check; then return $IDFX_FAIL; fi
+
+	local idf_monitor_path="$IDF_PATH/tools/idf_monitor.py"
+	
+	if ! [ -f "$idf_monitor_path" ]; then
+		echo "Error: Cannot find $idf_monitor_path"
+		return $IDFX_FAIL
+	fi
+	
+	local wsl_root="\\\\wsl\$\\$WSL_DISTRO_NAME"
+	local wsl_pwd=$(pwd)
+	local elf_path="/build/$IDFX_PROJECT_NAME.elf"
+	
+	if [[ ${wsl_pwd:1:3} == 'mnt' ]]; then
+		local win_root="${wsl_pwd:5:1}:${wsl_pwd:6}"
+		elf_path="$win_root$elf_path"
+	else
+		elf_path="$wsl_root$wsl_pwd$elf_path"
+	fi
+	
+	local additional_args=''
+	local disable_addr_dec='disable-address-decoding'
+	
+	if grep -qF "$disable_addr_dec" "$idf_monitor_path"; then
+		additional_args+=" --$disable_addr_dec"
+	fi
+	
+	local monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path $additional_args -p $1 $elf_path")
+	powershell.exe -Command "$monitor_cmd"
+
+	return $IDFX_OK
+}
+
+if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'all' ]]; then
 	echo 'Error: Wrong format'
 	echo 'Usage:
 	idfx COMMAND PORT
@@ -25,102 +131,20 @@ if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' ]]; then
 	Commands:
 		flash     Flash the project.
 		monitor   Display serial output.
+		all       Build, flash and monitor.
 		
 	Examples:
 		idfx flash COM6
 		idfx monitor COM6
-		idfx flash COM6 monitor'
+		idfx flash COM6 monitor
+		idfx all COM6'
 	echo
 	
 	exit
-fi
-
-if [[ -z "${IDF_PATH}" ]]; then
-	echo "Error: IDF_PATH environment variable is not set"
-	exit
-fi
-
-cmake_project_file='CMakeLists.txt'
-
-if ! [ -f "$cmake_project_file" ]; then
-	echo "Error: Cannot find $cmake_project_file."
-	echo "Are you sure that you are in the project folder?"
-	exit
-fi
-
-config_env_file='build/config.env'
-
-if ! [ -f "$config_env_file" ]; then
-	echo "Error: Cannot find $config_env_file"
-	echo 'Make sure to first build the project with the next command
-	idf.py build'
-	exit
-fi
-
-project_name=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $cmake_project_file)
-idf_target=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $config_env_file)
-
-# Ckecking if python and esptool package are installed on the windows
-
-if ! command -v python.exe &> /dev/null; then
-	echo 'Python needs to be installed on the Windows'
-	exit
-fi
-
-if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esptool") else 0)') != '1'* ]]; then
-	echo 'Python package "esptool" needs to be installed on the Windows.'
-	read -p 'Would you like to install it now (y/n): ' answer
-	
-	if [[ "$answer" == 'y' ]]; then
-		echo 'Ok. Installing esptool...'
-		pip.exe install esptool
-	else
-		echo 'Sorry but esptool needs to be installed'
-		exit
-	fi
-fi
-
-if [ "$1" = 'flash' ]; then
-	flash_cmd=$((echo "esptool.py
-		-p $2
-		-b 460800 --before default_reset --after hard_reset
-		--chip $idf_target
-		write_flash "; cat build/flash_project_args) | tr '\n' ' ')
-	
-	powershell.exe -Command "cd build ; $flash_cmd"
-fi
-
-if [[ "$1" = 'monitor' ]] || [[ $# -gt 2 && "$3" = 'monitor' ]]; then
-	idf_monitor_path="$IDF_PATH/tools/idf_monitor.py"
-	
-	if ! [ -f "$idf_monitor_path" ]; then
-		echo "Error: Cannot find $idf_monitor_path"
-		exit
-	fi
-	
-	if [[ -z "${WSL_DISTRO_NAME}" ]]; then
-		echo "Error: WSL_DISTRO_NAME environment variable is not set"
-		exit
-	fi
-	
-	wsl_root="\\\\wsl\$\\$WSL_DISTRO_NAME"
-	wsl_pwd=$(pwd)
-	elf_path="/build/$project_name.elf"
-	
-	if [[ ${wsl_pwd:1:3} == 'mnt' ]]; then
-		win_root="${wsl_pwd:5:1}:${wsl_pwd:6}"
-		elf_path="$win_root$elf_path"
-	else
-		elf_path="$wsl_root$wsl_pwd$elf_path"
-	fi
-	
-	additional_args=''
-	disable_addr_dec='disable-address-decoding'
-	
-	if grep -qF "$disable_addr_dec" "$idf_monitor_path"; then
-		additional_args+=" --$disable_addr_dec"
-	fi
-	
-	monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path $additional_args -p $2 $elf_path")
-	powershell.exe -Command "$monitor_cmd"
+elif [ "$1" == 'all' ]; then
+	idfx_build && idfx_flash $2 && idfx_monitor $2
+elif [ "$1" == 'flash' ]; then
+	idfx_flash $2
+elif [[ "$1" == 'monitor' ]] || [[ $# -gt 2 && "$3" == 'monitor' ]]; then
+	idfx_monitor $2
 fi

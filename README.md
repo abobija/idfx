@@ -15,6 +15,7 @@ idfx COMMAND PORT [monitor]
 - `COMMAND`s
     - `flash` - Flash the project.
     - `monitor` - Display serial output.
+    - `all` - Build project, flash and monitor serial output.
 - `PORT` - Serial COM Port on the Windows. Use Device Manager to find your port.
 - `monitor` - This argument can be provided if there is need to flash and monitor with single command (check [examples](#examples)).
 
@@ -28,7 +29,7 @@ wget https://raw.githubusercontent.com/abobija/idfx/main/idfx -O $HOME/.local/bi
 
 # Supported ESP-IDF versions
 
-idfx can work with ESP IDF 4.0 and above.
+idfx supports ESP-IDF version 4.0 and above.
 
 # Examples
 
@@ -37,6 +38,7 @@ idfx can work with ESP IDF 4.0 and above.
 | `idfx flash COM2`  | Flashing project using port `COM2` |
 | `idfx monitor COM2`  | Display serial output on the port `COM2` |
 | `idfx flash COM2 monitor` | Flash project and display serial output, using port `COM2` |
+| `idfx all COM2` | Build project, flash and monitor serial output, using port `COM2` |
 
 # [How to install ESP-IDF on WSL2 and build/flash/monitor?](https://gist.github.com/abobija/2f11d1b2c7cb079bec4df6e2348d969f)
 
