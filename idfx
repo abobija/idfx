@@ -25,50 +25,55 @@ IDFX_CONFIG_ENV_FILE='build/config.env'
 IDFX_PROJECT_NAME=''
 IDFX_TARGET=''
 
+idfx_err() {
+	printf "%s\n" "$*" >&2
+}
+
 idfx_environment_check() {
 	if [ "$IDFX_ENVIRONMENT_STATUS" -eq "$IDFX_OK" ]; then return $IDFX_OK; fi
 
 	if [[ -z "${WSL_DISTRO_NAME}" ]]; then
-		echo "Error: WSL_DISTRO_NAME environment variable is not set"
+		idfx_err "Error: WSL_DISTRO_NAME environment variable is not set"
 		return $IDFX_FAIL
 	fi
 
 	if [[ -z "${IDF_PATH}" ]]; then
-		echo "Error: IDF_PATH environment variable is not set"
+		idfx_err "Error: IDF_PATH environment variable is not set"
 		return $IDFX_FAIL
 	fi
 
 	if ! [ -f "$IDFX_CMAKE_PROJECT_FILE" ]; then
-		echo "Error: Cannot find $IDFX_CMAKE_PROJECT_FILE."
-		echo "Are you sure that you are in the project folder?"
+		idfx_err "Error: Cannot find $IDFX_CMAKE_PROJECT_FILE."
+		idfx_err "Are you sure that you are in the project folder?"
 		return $IDFX_FAIL
 	fi
 
 	if ! [ -f "$IDFX_CONFIG_ENV_FILE" ]; then
-		echo "Error: Cannot find $IDFX_CONFIG_ENV_FILE"
-		echo 'Make sure to first build the project with the next command
+		idfx_err "Error: Cannot find $IDFX_CONFIG_ENV_FILE"
+		idfx_err 'Make sure to first build the project with the next command
 		idf.py build'
 		return $IDFX_FAIL
 	fi
 
 	if ! command -v python.exe &> /dev/null; then
-		echo 'Python needs to be installed on the Windows'
+		idfx_err 'Python needs to be installed on the Windows'
 		return $IDFX_FAIL
 	fi
 
 	if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esptool") else 0)') != '1'* ]]; then
-		echo 'Python package "esptool" needs to be installed on the Windows.'
+		idfx_err 'Python package "esptool" needs to be installed on the Windows.'
 		read -p 'Would you like to install it now (y/n): ' answer
 		
 		if [[ "$answer" == 'y' ]]; then
-			echo 'Ok. Installing esptool...'
+			idfx_err 'Ok. Installing esptool...'
 			pip.exe install esptool
+			if [[ $? != 0 ]]; then return $?; fi
 		else
-			echo 'Sorry but esptool needs to be installed'
+			idfx_err 'Sorry but esptool needs to be installed'
 			return $IDFX_FAIL
 		fi
 	fi
-
+	
 	IDFX_PROJECT_NAME=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $IDFX_CMAKE_PROJECT_FILE)
 	IDFX_TARGET=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $IDFX_CONFIG_ENV_FILE)
 	IDFX_ENVIRONMENT_STATUS=$IDFX_OK
@@ -78,6 +83,7 @@ idfx_environment_check() {
 
 idfx_build() {
 	idf.py build
+	return $?
 }
 
 idfx_flash() {
@@ -86,7 +92,7 @@ idfx_flash() {
 	local flash_cmd=$((echo "esptool.py -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
 	powershell.exe -Command "cd build ; $flash_cmd"
 
-	return $IDFX_OK
+	return $?
 }
 
 idfx_monitor() {
@@ -95,7 +101,7 @@ idfx_monitor() {
 	local idf_monitor_path="$IDF_PATH/tools/idf_monitor.py"
 	
 	if ! [ -f "$idf_monitor_path" ]; then
-		echo "Error: Cannot find $idf_monitor_path"
+		idfx_err "Error: Cannot find $idf_monitor_path"
 		return $IDFX_FAIL
 	fi
 	
@@ -120,12 +126,12 @@ idfx_monitor() {
 	local monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path $additional_args -p $1 $elf_path")
 	powershell.exe -Command "$monitor_cmd"
 
-	return $IDFX_OK
+	return $?
 }
 
 if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'all' ]]; then
-	echo 'Error: Wrong format'
-	echo 'Usage:
+	idfx_err 'Error: Wrong format'
+	idfx_err 'Usage:
 	idfx COMMAND PORT
 	
 	Commands:
@@ -138,9 +144,8 @@ if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'all' ]]; 
 		idfx monitor COM6
 		idfx flash COM6 monitor
 		idfx all COM6'
-	echo
 	
-	exit
+	exit $IDFX_FAIL
 elif [ "$1" == 'all' ]; then
 	idfx_build && idfx_flash $2 && idfx_monitor $2
 elif [ "$1" == 'flash' ]; then
