@@ -89,8 +89,17 @@ idfx_build() {
 idfx_flash() {
 	if ! idfx_environment_check; then return $IDFX_FAIL; fi
 
-	local flash_cmd=$((echo "esptool.py -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
-	powershell.exe -Command "cd build ; $flash_cmd"
+	local cmd=$((echo "esptool.py -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
+	powershell.exe -Command "cd build ; $cmd"
+
+	return $?
+}
+
+idfx_erase_flash() {
+	if ! idfx_environment_check; then return $IDFX_FAIL; fi
+
+	local cmd="esptool.py -p $1 -b 460800 --chip $IDFX_TARGET erase_flash"
+	powershell.exe -Command "$cmd"
 
 	return $?
 }
@@ -129,7 +138,7 @@ idfx_monitor() {
 	return $?
 }
 
-if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'all' ]]; then
+if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'erase_flash' && "$1" != 'all' ]]; then
 	idfx_err 'Error: Wrong format'
 	idfx_err 'Usage:
 	idfx COMMAND PORT
@@ -143,13 +152,16 @@ if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'all' ]]; 
 		idfx flash COM6
 		idfx monitor COM6
 		idfx flash COM6 monitor
-		idfx all COM6'
+		idfx all COM6
+		idfx erase_flash COM6'
 	
 	exit $IDFX_FAIL
 elif [ "$1" == 'all' ]; then
 	idfx_build && idfx_flash $2 && idfx_monitor $2
 elif [ "$1" == 'flash' ]; then
 	idfx_flash $2
+elif [ "$1" == 'erase_flash' ]; then
+	idfx_erase_flash $2
 elif [[ "$1" == 'monitor' ]] || [[ $# -gt 2 && "$3" == 'monitor' ]]; then
 	idfx_monitor $2
 fi
