@@ -144,9 +144,10 @@ if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'erase_fla
 	idfx COMMAND PORT
 	
 	Commands:
-		flash     Flash the project.
-		monitor   Display serial output.
-		all       Build, flash and monitor.
+		flash        Flash the project.
+		monitor      Display serial output.
+		all          Build, flash and monitor.
+		erase_flash  Erase entire flash.
 		
 	Examples:
 		idfx flash COM6
