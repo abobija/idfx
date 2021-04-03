@@ -139,13 +139,13 @@ idfx_monitor() {
 	fi
 
 	if [[ $IDFX_TARGET == 'esp8266' ]]; then
-		local project_config_file="build/include/config/auto.conf"
+		local project_config_file="build/config/sdkconfig.json"
 		local monitor_baud=''
 
 		if ! [ -f "$project_config_file" ]; then
 			idfx_err "Warning: Config file missing at path: $project_config_file"
 		else
-			monitor_baud=$(grep -oP '(?<=CONFIG_ESPTOOLPY_MONITOR_BAUD=)[^ ]*' $project_config_file)
+			monitor_baud=$(cat build/config/sdkconfig.json | python -c "import sys, json; _conf=json.load(sys.stdin); print(_conf.get('ESP_CONSOLE_UART_BAUDRATE', ''))")
 		fi
 
 		if [ -z $monitor_baud ]; then
