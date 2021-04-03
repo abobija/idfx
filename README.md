@@ -1,6 +1,6 @@
 # idfx :zap:
 
-While there is [no support for USB devices on WSL2](https://github.com/microsoft/WSL/issues/4322) for now, this tool comes to help you to flash and monitor [ESP-IDF](https://github.com/espressif/esp-idf) (or [ESP8266_SDK](https://github.com/espressif/ESP8266_RTOS_SDK)) applications on the [WSL2](https://docs.microsoft.com/en-us/windows/wsl/compare-versions).
+While there is [no support for USB devices on WSL2](https://github.com/microsoft/WSL/issues/4322) for now, this tool comes to help you to flash and monitor [ESP-IDF](https://github.com/espressif/esp-idf) and [ESP8266_SDK](https://github.com/espressif/ESP8266_RTOS_SDK) applications on the [WSL2](https://docs.microsoft.com/en-us/windows/wsl/compare-versions).
 
 > **Info:**<br>Tested on [Ubuntu 20.04 LTS](https://www.microsoft.com/en-us/p/ubuntu-2004-lts/9n6svws3rx71) and [Debian](https://www.microsoft.com/en-us/p/debian/9msvkqc78pk6) distributions.
 
@@ -31,8 +31,8 @@ wget https://raw.githubusercontent.com/abobija/idfx/main/idfx -O $HOME/.local/bi
 # Supported ESP-IDF versions
 
 idfx supports:
-    - [ESP-IDF](https://github.com/espressif/esp-idf) version 4.0 and above
-    - [ESP8266_SDK](https://github.com/espressif/ESP8266_RTOS_SDK) version 3.0 and above
+- [ESP-IDF](https://github.com/espressif/esp-idf) version 4.0 and above
+- [ESP8266_SDK](https://github.com/espressif/ESP8266_RTOS_SDK) version 3.0 and above
 
 # Examples
 
