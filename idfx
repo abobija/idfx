@@ -9,21 +9,20 @@
 #
 #	While there is no support for USB devices for now,
 #	this tool comes to help you to flash and monitor
-#	your ESP-IDF applications on the WSL2.
+#	your ESP-IDF (or ESP8266_SDK) applications on the WSL2.
 #
 # Author:
 #	Alija Bobija (https://abobija.com | https://github.com/abobija)
 #
 # Usage:
-#	idfx COMMAND PORT [monitor]
+#	idfx COMMAND [PORT]
 
 IDFX_OK=0
 IDFX_FAIL=1
 IDFX_ENVIRONMENT_STATUS=$IDFX_FAIL
-IDFX_CMAKE_PROJECT_FILE='CMakeLists.txt'
-IDFX_CONFIG_ENV_FILE='build/config.env'
 IDFX_PROJECT_NAME=''
 IDFX_TARGET=''
+IDFX_NEEDS_HELP=0
 
 idfx_err() {
 	printf "%s\n" "$*" >&2
@@ -42,18 +41,25 @@ idfx_environment_check() {
 		return $IDFX_FAIL
 	fi
 
+	local IDFX_CMAKE_PROJECT_FILE='CMakeLists.txt'
+	local IDFX_CONFIG_ENV_FILE='build/config.env'
+
 	if ! [ -f "$IDFX_CMAKE_PROJECT_FILE" ]; then
 		idfx_err "Error: Cannot find $IDFX_CMAKE_PROJECT_FILE."
 		idfx_err "Are you sure that you are in the project folder?"
 		return $IDFX_FAIL
 	fi
 
+	IDFX_PROJECT_NAME=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $IDFX_CMAKE_PROJECT_FILE)
+
 	if ! [ -f "$IDFX_CONFIG_ENV_FILE" ]; then
 		idfx_err "Error: Cannot find $IDFX_CONFIG_ENV_FILE"
-		idfx_err 'Make sure to first build the project with the next command
-		idf.py build'
+		idfx_err 'Make sure to first build the project with next command
+		idfx build'
 		return $IDFX_FAIL
 	fi
+
+	IDFX_TARGET=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $IDFX_CONFIG_ENV_FILE)
 
 	if ! command -v python.exe &> /dev/null; then
 		idfx_err 'Python needs to be installed on the Windows'
@@ -74,21 +80,21 @@ idfx_environment_check() {
 		fi
 	fi
 	
-	IDFX_PROJECT_NAME=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $IDFX_CMAKE_PROJECT_FILE)
-	IDFX_TARGET=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $IDFX_CONFIG_ENV_FILE)
 	IDFX_ENVIRONMENT_STATUS=$IDFX_OK
 
 	return $IDFX_OK
 }
 
 idfx_build() {
+	if ! idfx_environment_check; then return $IDFX_FAIL; fi
 	idf.py build
+
 	return $?
 }
 
 idfx_flash() {
 	if ! idfx_environment_check; then return $IDFX_FAIL; fi
-
+	
 	local cmd=$((echo "python.exe -m esptool -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
 	powershell.exe -Command "cd build ; $cmd"
 
@@ -131,6 +137,23 @@ idfx_monitor() {
 	if grep -qF "$disable_addr_dec" "$idf_monitor_path"; then
 		additional_args+=" --$disable_addr_dec"
 	fi
+
+	if [[ $IDFX_TARGET == 'esp8266' ]]; then
+		local project_config_file="build/include/config/auto.conf"
+		local monitor_baud=''
+
+		if ! [ -f "$project_config_file" ]; then
+			idfx_err "Warning: Config file missing at path: $project_config_file"
+		else
+			monitor_baud=$(grep -oP '(?<=CONFIG_ESPTOOLPY_MONITOR_BAUD=)[^ ]*' $project_config_file)
+		fi
+
+		if [ -z $monitor_baud ]; then
+			idfx_err "Cannot obtain exact monitor baud rate"
+		else
+			additional_args+=" -b $monitor_baud"
+		fi
+	fi
 	
 	local monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path $additional_args -p $1 $elf_path")
 	powershell.exe -Command "$monitor_cmd"
@@ -138,35 +161,55 @@ idfx_monitor() {
 	return $?
 }
 
-if [ $# -lt 2 ] || [[ "$1" != 'flash' && "$1" != 'monitor' && "$1" != 'erase_flash' && "$1" != 'all' ]]; then
+if [ $# -eq 1 ]; then
+	if [[ $1 == 'build' ]]; then
+		idfx_build
+	else
+		IDFX_NEEDS_HELP=1
+	fi
+elif [[ $# -gt 1 && $# -lt 4 ]]; then
+	case $1 in
+		'all')
+			idfx_build && idfx_flash $2 && idfx_monitor $2
+			;;
+		
+		'flash')
+			idfx_flash $2
+
+			if [[ $# == 3 && $3 == 'monitor' ]]; then
+				idfx_monitor $2
+			fi
+			;;
+		
+		'erase_flash')
+			idfx_erase_flash $2
+			;;
+		
+		'monitor')
+			idfx_monitor $2
+			;;
+		
+		*)
+			IDFX_NEEDS_HELP=1
+			;;
+	esac
+fi
+
+if [[ $IDFX_NEEDS_HELP == 1 ]]; then
 	idfx_err 'Error: Wrong format'
 	idfx_err 'Usage:
-	idfx COMMAND PORT
+	idfx COMMAND [PORT]
 	
 	Commands:
+		build        Build the project (alias for `idf.py build`).
 		flash        Flash the project.
 		monitor      Display serial output.
 		all          Build, flash and monitor.
 		erase_flash  Erase entire flash.
 		
-	Examples:
-		idfx flash COM6
-		idfx monitor COM6
-		idfx flash COM6 monitor
-		idfx all COM6
-		idfx erase_flash COM6'
+	Example:
+		idfx all COM6'
 	
+	echo
 	exit $IDFX_FAIL
-elif [ "$1" == 'all' ]; then
-	idfx_build && idfx_flash $2 && idfx_monitor $2
-elif [ "$1" == 'flash' ]; then
-	idfx_flash $2
-
-	if [[ $# -gt 2 && "$3" == 'monitor' ]]; then
-		idfx_monitor $2
-	fi
-elif [ "$1" == 'erase_flash' ]; then
-	idfx_erase_flash $2
-elif [[ "$1" == 'monitor' ]]; then
-	idfx_monitor $2
 fi
