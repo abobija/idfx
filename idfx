@@ -24,12 +24,17 @@ IDFX_PROJECT_NAME=''
 IDFX_TARGET=''
 IDFX_NEEDS_HELP=0
 
+IDFX_STATUS_ENV=$IDFX_FAIL
+IDFX_STATUS_PROJ=$IDFX_FAIL
+IDFX_STATUS_BUILD_CONFIG=$IDFX_FAIL
+IDFX_STATUS_ESPTOOL=$IDFX_FAIL
+
 idfx_err() {
 	printf "%s\n" "$*" >&2
 }
 
-idfx_environment_check() {
-	if [ "$IDFX_ENVIRONMENT_STATUS" -eq "$IDFX_OK" ]; then return $IDFX_OK; fi
+idfx_check_env() {
+	if [ $IDFX_STATUS_ENV -eq $IDFX_OK ]; then return $IDFX_OK; fi
 
 	if [[ -z "${WSL_DISTRO_NAME}" ]]; then
 		idfx_err "Error: WSL_DISTRO_NAME environment variable is not set"
@@ -41,8 +46,15 @@ idfx_environment_check() {
 		return $IDFX_FAIL
 	fi
 
+	IDFX_STATUS_ENV=$IDFX_OK
+	return $IDFX_OK
+}
+
+idfx_check_proj() {
+	if [ $IDFX_STATUS_PROJ -eq $IDFX_OK ]; then return $IDFX_OK; fi
+	if ! idfx_check_env; then return $IDFX_FAIL; fi
+
 	local IDFX_CMAKE_PROJECT_FILE='CMakeLists.txt'
-	local IDFX_CONFIG_ENV_FILE='build/config.env'
 
 	if ! [ -f "$IDFX_CMAKE_PROJECT_FILE" ]; then
 		idfx_err "Error: Cannot find $IDFX_CMAKE_PROJECT_FILE."
@@ -52,14 +64,32 @@ idfx_environment_check() {
 
 	IDFX_PROJECT_NAME=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $IDFX_CMAKE_PROJECT_FILE)
 
+	IDFX_STATUS_PROJ=$IDFX_OK
+	return $IDFX_OK
+}
+
+idfx_check_build_config() {
+	if [ $IDFX_STATUS_BUILD_CONFIG -eq $IDFX_OK ]; then return $IDFX_OK; fi
+	if ! idfx_check_proj; then return $IDFX_FAIL; fi
+
+	local IDFX_CONFIG_ENV_FILE='build/config.env'
+
 	if ! [ -f "$IDFX_CONFIG_ENV_FILE" ]; then
 		idfx_err "Error: Cannot find $IDFX_CONFIG_ENV_FILE"
-		idfx_err 'Make sure to first build the project with next command
-		idfx build'
+		idfx_err 'Make sure to first build the project with next command'
+		idfx_err $'\t''idfx build'
 		return $IDFX_FAIL
 	fi
 
 	IDFX_TARGET=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $IDFX_CONFIG_ENV_FILE)
+
+	IDFX_STATUS_BUILD_CONFIG=$IDFX_OK
+	return $IDFX_OK
+}
+
+idfx_check_esptool() {
+	if [ $IDFX_STATUS_ESPTOOL -eq $IDFX_OK ]; then return $IDFX_OK; fi
+	if ! idfx_check_build_config; then return $IDFX_FAIL; fi
 
 	if ! command -v python.exe &> /dev/null; then
 		idfx_err 'Python needs to be installed on the Windows'
@@ -79,21 +109,29 @@ idfx_environment_check() {
 			return $IDFX_FAIL
 		fi
 	fi
-	
-	IDFX_ENVIRONMENT_STATUS=$IDFX_OK
 
+	IDFX_STATUS_ESPTOOL=$IDFX_OK
 	return $IDFX_OK
 }
 
 idfx_build() {
-	if ! idfx_environment_check; then return $IDFX_FAIL; fi
+	if ! idfx_check_proj; then return $IDFX_FAIL; fi
 	idf.py build
+
+	if [ $? -eq 0 ]; then
+		echo
+		echo '┌───────────────────────────────────────────────┐'
+		echo '│ Project build complete.                       │'
+		echo '│ To flash, run this command: idfx flash (PORT) │'
+		echo '└───────────────────────────────────────────────┘'
+		echo
+	fi
 
 	return $?
 }
 
 idfx_flash() {
-	if ! idfx_environment_check; then return $IDFX_FAIL; fi
+	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
 	
 	local cmd=$((echo "python.exe -m esptool -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
 	powershell.exe -Command "cd build ; $cmd"
@@ -102,7 +140,7 @@ idfx_flash() {
 }
 
 idfx_erase_flash() {
-	if ! idfx_environment_check; then return $IDFX_FAIL; fi
+	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
 
 	local cmd="python.exe -m esptool -p $1 -b 460800 --chip $IDFX_TARGET erase_flash"
 	powershell.exe -Command "$cmd"
@@ -111,7 +149,7 @@ idfx_erase_flash() {
 }
 
 idfx_monitor() {
-	if ! idfx_environment_check; then return $IDFX_FAIL; fi
+	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
 
 	local idf_monitor_path="$IDF_PATH/tools/idf_monitor.py"
 	
