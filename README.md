@@ -40,6 +40,8 @@ idfx supports:
 
 | Command  | Description |
 | ------------- | ------------- |
+| `idfx set-target esp32` | Set target (alias for idf.py set-target `esp32`)  |
+| `idfx menuconfig` | Configure (alias for idf.py menuconfig) |
 | `idfx build`  | Building project (alias for `idf.py build`) |
 | `idfx flash COM2`  | Flashing project using port `COM2` |
 | `idfx monitor COM2`  | Display serial output on the port `COM2` |
