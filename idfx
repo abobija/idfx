@@ -22,7 +22,7 @@ IDFX_FAIL=1
 IDFX_ENVIRONMENT_STATUS=$IDFX_FAIL
 IDFX_PROJECT_NAME=''
 IDFX_TARGET=''
-IDFX_NEEDS_HELP=0
+IDFX_NEEDS_HELP=1
 
 IDFX_STATUS_ENV=$IDFX_FAIL
 IDFX_STATUS_PROJ=$IDFX_FAIL
@@ -223,6 +223,7 @@ idfx_monitor() {
 
 # Main Script
 if [ $# -eq 1 ]; then
+IDFX_NEEDS_HELP=0
 	case $1 in
 		'build')
 			idfx_build
@@ -245,6 +246,7 @@ if [ $# -eq 1 ]; then
 	# 	IDFX_NEEDS_HELP=1
 	# fi
 elif [[ $# -gt 1 && $# -lt 4 ]]; then
+IDFX_NEEDS_HELP=0
 	case $1 in
 		'all')
 			idfx_build && idfx_flash $2 && idfx_monitor $2
