@@ -114,6 +114,31 @@ idfx_check_esptool() {
 	return $IDFX_OK
 }
 
+<<<<<<< Updated upstream
+=======
+idfx_set-target() {
+	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
+	idf.py set-target $1
+
+	if [ $? -eq 0 ]; then
+		echo
+		echo '──────────────────────────────────────────'
+		echo '    Target has been set to '$1
+		echo '──────────────────────────────────────────'
+		echo
+	fi
+
+	return $?
+}
+
+idfx_menuconfig() {
+	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
+	idf.py menuconfig
+
+	return $?
+}
+
+>>>>>>> Stashed changes
 idfx_build() {
 	if ! idfx_check_proj; then return $IDFX_FAIL; fi
 	idf.py build
@@ -131,11 +156,25 @@ idfx_build() {
 }
 
 idfx_flash() {
+
+	if ! idfx_check_proj; then return $IDFX_FAIL; fi
+	idf.py build	#default behaviour of idf.py to build along with flash
+	echo
+	echo '┌──────────────────────────┐'
+	echo '│ Project build complete.  │'
+	echo '│ Flashing.....            │'
+	echo '└──────────────────────────┘'
+	echo
+
 	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
 	
 	local cmd=$((echo "python.exe -m esptool -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
 	powershell.exe -Command "cd build ; $cmd"
 
+	echo '──────────────────────────────────────────────────────'
+	echo '    Did you know?: '
+	echo '    Flashing also automaticallly builds the project'
+	echo '──────────────────────────────────────────────────────'
 	return $?
 }
 
