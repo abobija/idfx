@@ -13,11 +13,13 @@ idfx COMMAND [PORT]
 ```
 
 - `COMMAND`s
-    - `build` - Build the project (alias for `idf.py build`).
-    - `flash` - Flash the project.
-    - `monitor` - Display serial output.
-    - `all` - Build project, flash and monitor serial output.
+    - `build`       - Build the project (alias for `idf.py build`).
+    - `flash`       - Flash the project.
+    - `monitor`     - Display serial output.
+    - `all`         - Build project, flash and monitor serial output.
     - `erase_flash` - Erase the entire flash content.
+  	-  `set-target` - Set target (alias for idf.py set-target [TARGET])
+	-  `menuconfig` - Configure (alias for idf.py menuconfig)
 - `PORT` - Serial COM Port on the Windows. Use Device Manager to find your port.
 
 # Installation
@@ -38,6 +40,8 @@ idfx supports:
 
 | Command  | Description |
 | ------------- | ------------- |
+| `idfx set-target esp32` | Set target (alias for idf.py set-target `esp32`)  |
+| `idfx menuconfig` | Configure (alias for idf.py menuconfig) |
 | `idfx build`  | Building project (alias for `idf.py build`) |
 | `idfx flash COM2`  | Flashing project using port `COM2` |
 | `idfx monitor COM2`  | Display serial output on the port `COM2` |

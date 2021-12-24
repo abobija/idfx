@@ -22,7 +22,7 @@ IDFX_FAIL=1
 IDFX_ENVIRONMENT_STATUS=$IDFX_FAIL
 IDFX_PROJECT_NAME=''
 IDFX_TARGET=''
-IDFX_NEEDS_HELP=0
+IDFX_NEEDS_HELP=1
 
 IDFX_STATUS_ENV=$IDFX_FAIL
 IDFX_STATUS_PROJ=$IDFX_FAIL
@@ -155,6 +155,28 @@ idfx_build() {
 	return $?
 }
 
+idfx_set-target() {
+	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
+	idf.py set-target $1
+
+	if [ $? -eq 0 ]; then
+		echo
+		echo '──────────────────────────────────────────'
+		echo '    Target has been set to '$1
+		echo '──────────────────────────────────────────'
+		echo
+	fi
+
+	return $?
+}
+
+idfx_menuconfig() {
+	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
+	idf.py menuconfig
+
+	return $?
+}
+
 idfx_flash() {
 
 	if ! idfx_check_proj; then return $IDFX_FAIL; fi
@@ -238,13 +260,32 @@ idfx_monitor() {
 	return $?
 }
 
+# Main Script
 if [ $# -eq 1 ]; then
-	if [[ $1 == 'build' ]]; then
-		idfx_build
-	else
-		IDFX_NEEDS_HELP=1
-	fi
+IDFX_NEEDS_HELP=0
+	case $1 in
+		'build')
+			idfx_build
+			;;
+		'set-target')
+			idfx_set-target
+			;;
+		'menuconfig')
+			idfx_menuconfig
+			;;
+		*)
+			IDFX_NEEDS_HELP=1
+			;;
+	esac	
+	# if [[ $1 == 'build' ]]; then
+	# 	idfx_build
+	# elif [[ $1 == 'set-target' ]]; then
+	# 	idfx_set-target
+	# else
+	# 	IDFX_NEEDS_HELP=1
+	# fi
 elif [[ $# -gt 1 && $# -lt 4 ]]; then
+IDFX_NEEDS_HELP=0
 	case $1 in
 		'all')
 			idfx_build && idfx_flash $2 && idfx_monitor $2
@@ -265,7 +306,10 @@ elif [[ $# -gt 1 && $# -lt 4 ]]; then
 		'monitor')
 			idfx_monitor $2
 			;;
-		
+		'set-target')
+			idfx_set-target $2
+			
+			;;		
 		*)
 			IDFX_NEEDS_HELP=1
 			;;
@@ -283,7 +327,9 @@ if [[ $IDFX_NEEDS_HELP == 1 ]]; then
 		monitor      Display serial output.
 		all          Build, flash and monitor.
 		erase_flash  Erase entire flash.
-		
+		set-target   Set target (alias for idf.py set-target [TARGET])
+		menuconfig   Configure (alias for idf.py menuconfig)
+
 	Example:
 		idfx all COM6'
 	
