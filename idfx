@@ -114,8 +114,6 @@ idfx_check_esptool() {
 	return $IDFX_OK
 }
 
-<<<<<<< Updated upstream
-=======
 idfx_set-target() {
 	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
 	idf.py set-target $1
@@ -138,7 +136,6 @@ idfx_menuconfig() {
 	return $?
 }
 
->>>>>>> Stashed changes
 idfx_build() {
 	if ! idfx_check_proj; then return $IDFX_FAIL; fi
 	idf.py build
