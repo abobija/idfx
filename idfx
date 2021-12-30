@@ -1,253 +1,308 @@
 #!/bin/bash
 
 # Title:
-#	idfx
+#   idfx
 #
 # Description:
-#	This script is part of github repository https://github.com/abobija/idfx
-#	There you can find more about this script, as well as latest updates
-#
-#	While there is no support for USB devices for now,
-#	this tool comes to help you to flash and monitor
-#	your ESP-IDF (or ESP8266_SDK) applications on the WSL2.
+#   This script is part of github repository https://github.com/abobija/idfx
+#   There you can find more about this script, as well as latest updates
+# 
+#   While there is no support for USB devices for now,
+#   this tool comes to help you to flash and monitor
+#   your ESP-IDF (or ESP8266_SDK) applications on the WSL2.
 #
 # Author:
-#	Alija Bobija (https://abobija.com | https://github.com/abobija)
+#   Alija Bobija (https://abobija.com | https://github.com/abobija)
 #
 # Usage:
-#	idfx COMMAND [PORT]
+#   idfx COMMAND [PORT]
 
 IDFX_OK=0
 IDFX_FAIL=1
 IDFX_ENVIRONMENT_STATUS=$IDFX_FAIL
 IDFX_PROJECT_NAME=''
 IDFX_TARGET=''
-IDFX_NEEDS_HELP=0
+IDFX_IS_COMMAND_FORWARDED_TO_IDF_PY=0
+
+# list of commands that will be forwarded to idf.py
+IDFX_FORWARD_COMMANDS=(
+  'set-target'
+  'menuconfig'
+  'app'
+  'bootloader'
+  'clean'
+  'fullclean'
+  'size'
+  'size-components'
+  'size-files'
+)
 
 IDFX_STATUS_ENV=$IDFX_FAIL
 IDFX_STATUS_PROJ=$IDFX_FAIL
 IDFX_STATUS_BUILD_CONFIG=$IDFX_FAIL
 IDFX_STATUS_ESPTOOL=$IDFX_FAIL
 
+set -e
+
 idfx_err() {
 	printf "%s\n" "$*" >&2
 }
 
 idfx_check_env() {
-	if [ $IDFX_STATUS_ENV -eq $IDFX_OK ]; then return $IDFX_OK; fi
+  if [ $IDFX_STATUS_ENV -eq $IDFX_OK ]; then return $IDFX_OK; fi
 
-	if [[ -z "${WSL_DISTRO_NAME}" ]]; then
-		idfx_err "Error: WSL_DISTRO_NAME environment variable is not set"
-		return $IDFX_FAIL
-	fi
+  if [[ -z "${WSL_DISTRO_NAME}" ]]; then
+    idfx_err "Error: WSL_DISTRO_NAME environment variable is not set"
+    return $IDFX_FAIL
+  fi
 
-	if [[ -z "${IDF_PATH}" ]]; then
-		idfx_err "Error: IDF_PATH environment variable is not set"
-		return $IDFX_FAIL
-	fi
+  if [[ -z "${IDF_PATH}" ]]; then
+    idfx_err "Error: IDF_PATH environment variable is not set"
+    return $IDFX_FAIL
+  fi
 
-	IDFX_STATUS_ENV=$IDFX_OK
-	return $IDFX_OK
+  IDFX_STATUS_ENV=$IDFX_OK
+  return $IDFX_STATUS_ENV
 }
 
 idfx_check_proj() {
-	if [ $IDFX_STATUS_PROJ -eq $IDFX_OK ]; then return $IDFX_OK; fi
-	if ! idfx_check_env; then return $IDFX_FAIL; fi
+  if [ $IDFX_STATUS_PROJ -eq $IDFX_OK ]; then return $IDFX_OK; fi
 
-	local IDFX_CMAKE_PROJECT_FILE='CMakeLists.txt'
+  idfx_check_env
 
-	if ! [ -f "$IDFX_CMAKE_PROJECT_FILE" ]; then
-		idfx_err "Error: Cannot find $IDFX_CMAKE_PROJECT_FILE."
-		idfx_err "Are you sure that you are in the project folder?"
-		return $IDFX_FAIL
-	fi
+  local IDFX_CMAKE_PROJECT_FILE='CMakeLists.txt'
 
-	IDFX_PROJECT_NAME=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $IDFX_CMAKE_PROJECT_FILE)
+  if ! [ -f "$IDFX_CMAKE_PROJECT_FILE" ]; then
+    idfx_err "Error: Cannot find $IDFX_CMAKE_PROJECT_FILE."
+    idfx_err "Are you sure that you are in the project folder?"
+    return $IDFX_FAIL
+  fi
 
-	IDFX_STATUS_PROJ=$IDFX_OK
-	return $IDFX_OK
+  IDFX_PROJECT_NAME=$(grep -oP '(?<=project\()[^ ]*(?=[ \)])' $IDFX_CMAKE_PROJECT_FILE)
+
+  IDFX_STATUS_PROJ=$IDFX_OK
+  return $IDFX_STATUS_PROJ
 }
 
 idfx_check_build_config() {
-	if [ $IDFX_STATUS_BUILD_CONFIG -eq $IDFX_OK ]; then return $IDFX_OK; fi
-	if ! idfx_check_proj; then return $IDFX_FAIL; fi
+  if [ $IDFX_STATUS_BUILD_CONFIG -eq $IDFX_OK ]; then return $IDFX_OK; fi
 
-	local IDFX_CONFIG_ENV_FILE='build/config.env'
+  idfx_check_proj
 
-	if ! [ -f "$IDFX_CONFIG_ENV_FILE" ]; then
-		idfx_err "Error: Cannot find $IDFX_CONFIG_ENV_FILE"
-		idfx_err 'Make sure to first build the project with next command'
-		idfx_err $'\t''idfx build'
-		return $IDFX_FAIL
-	fi
+  local IDFX_CONFIG_ENV_FILE='build/config.env'
 
-	IDFX_TARGET=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $IDFX_CONFIG_ENV_FILE)
+  if ! [ -f "$IDFX_CONFIG_ENV_FILE" ]; then
+    idfx_err "Error: Cannot find $IDFX_CONFIG_ENV_FILE"
+    idfx_err 'Make sure to first build the project with next command'
+    idfx_err $'\t''idfx build'
+    return $IDFX_FAIL
+  fi
 
-	IDFX_STATUS_BUILD_CONFIG=$IDFX_OK
-	return $IDFX_OK
+  IDFX_TARGET=$(grep -oP '(?<="IDF_TARGET": ")[^"]*' $IDFX_CONFIG_ENV_FILE)
+
+  IDFX_STATUS_BUILD_CONFIG=$IDFX_OK
+  return $IDFX_STATUS_BUILD_CONFIG
 }
 
 idfx_check_esptool() {
-	if [ $IDFX_STATUS_ESPTOOL -eq $IDFX_OK ]; then return $IDFX_OK; fi
-	if ! idfx_check_build_config; then return $IDFX_FAIL; fi
+  if [ $IDFX_STATUS_ESPTOOL -eq $IDFX_OK ]; then return $IDFX_OK; fi
 
-	if ! command -v python.exe &> /dev/null; then
-		idfx_err 'Python needs to be installed on the Windows'
-		return $IDFX_FAIL
-	fi
+  idfx_check_build_config
 
-	if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esptool") else 0)') != '1'* ]]; then
-		idfx_err 'Python package "esptool" needs to be installed on the Windows.'
-		read -p 'Would you like to install it now (y/n): ' answer
-		
-		if [[ "$answer" == 'y' ]]; then
-			idfx_err 'Ok. Installing esptool...'
-			pip.exe install esptool
-			if [[ $? != 0 ]]; then return $?; fi
-		else
-			idfx_err 'Sorry but esptool needs to be installed'
-			return $IDFX_FAIL
-		fi
-	fi
+  if ! command -v python.exe &> /dev/null; then
+    idfx_err 'Python needs to be installed on the Windows'
+    return $IDFX_FAIL
+  fi
 
-	IDFX_STATUS_ESPTOOL=$IDFX_OK
-	return $IDFX_OK
+  if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esptool") else 0)') != '1'* ]]; then
+    idfx_err 'Python package "esptool" needs to be installed on the Windows.'
+    read -p 'Would you like to install it now (y/n): ' answer
+
+    if [[ "$answer" == 'y' ]]; then
+      idfx_err 'Ok. Installing esptool...'
+      pip.exe install esptool
+      if [[ $? != 0 ]]; then return $?; fi
+    else
+      idfx_err 'Sorry but esptool needs to be installed'
+      return $IDFX_FAIL
+    fi
+  fi
+
+  IDFX_STATUS_ESPTOOL=$IDFX_OK
+  return $IDFX_STATUS_ESPTOOL
 }
 
 idfx_build() {
-	if ! idfx_check_proj; then return $IDFX_FAIL; fi
-	idf.py build
+  idfx_check_proj
+  idf.py build
 
-	if [ $? -eq 0 ]; then
-		echo
-		echo '┌───────────────────────────────────────────────┐'
-		echo '│ Project build complete.                       │'
-		echo '│ To flash, run this command: idfx flash (PORT) │'
-		echo '└───────────────────────────────────────────────┘'
-		echo
-	fi
+  if [ $? -eq 0 ]; then
+    echo
+    echo '┌───────────────────────────────────────────────┐'
+    echo '│ Project build complete.                       │'
+    echo '│ To flash, run this command: idfx flash (PORT) │'
+    echo '└───────────────────────────────────────────────┘'
+    echo
+  fi
 
-	return $?
+  return $?
+}
+
+idfx_check_port() {
+  if [ -z "${1}" ]; then
+    idfx_err "Error: It seems like you forgot to provide the PORT"
+    return $IDFX_FAIL
+  fi
 }
 
 idfx_flash() {
-	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
-	
-	local cmd=$((echo "python.exe -m esptool -p $1 -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
-	powershell.exe -Command "cd build ; $cmd"
+  idfx_check_esptool
+  idfx_check_port "${1}"
 
-	return $?
+  local cmd=$((echo "python.exe -m esptool -p ${1} -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
+  powershell.exe -Command "cd build ; $cmd"
+
+  return $?
 }
 
 idfx_erase_flash() {
-	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
+  idfx_check_esptool
+  idfx_check_port "${1}"
 
-	local cmd="python.exe -m esptool -p $1 -b 460800 --chip $IDFX_TARGET erase_flash"
-	powershell.exe -Command "$cmd"
+  local cmd="python.exe -m esptool -p ${1} -b 460800 --chip $IDFX_TARGET erase_flash"
+  powershell.exe -Command "$cmd"
 
-	return $?
+  return $?
 }
 
 idfx_monitor() {
-	if ! idfx_check_esptool; then return $IDFX_FAIL; fi
+  idfx_check_esptool
+  idfx_check_port "${1}"
 
-	local idf_monitor_path="$IDF_PATH/tools/idf_monitor.py"
-	
-	if ! [ -f "$idf_monitor_path" ]; then
-		idfx_err "Error: Cannot find $idf_monitor_path"
-		return $IDFX_FAIL
-	fi
-	
-	local wsl_root="\\\\wsl\$\\$WSL_DISTRO_NAME"
-	local wsl_pwd=$(pwd)
-	local elf_path="/build/$IDFX_PROJECT_NAME.elf"
-	
-	if [[ ${wsl_pwd:1:3} == 'mnt' ]]; then
-		local win_root="${wsl_pwd:5:1}:${wsl_pwd:6}"
-		elf_path="$win_root$elf_path"
-	else
-		elf_path="$wsl_root$wsl_pwd$elf_path"
-	fi
-	
-	local additional_args=''
-	local disable_addr_dec='disable-address-decoding'
-	
-	if grep -qF "$disable_addr_dec" "$idf_monitor_path"; then
-		additional_args+=" --$disable_addr_dec"
-	fi
+  local port="${1}"
 
-	if [[ $IDFX_TARGET == 'esp8266' ]]; then
-		local project_config_file="build/config/sdkconfig.json"
-		local monitor_baud=''
+  local idf_monitor_path="$IDF_PATH/tools/idf_monitor.py"
 
-		if ! [ -f "$project_config_file" ]; then
-			idfx_err "Warning: Config file missing at path: $project_config_file"
-		else
-			monitor_baud=$(cat build/config/sdkconfig.json | python -c "import sys, json; _conf=json.load(sys.stdin); print(_conf.get('ESP_CONSOLE_UART_BAUDRATE', ''))")
-		fi
+  if ! [ -f "$idf_monitor_path" ]; then
+    idfx_err "Error: Cannot find $idf_monitor_path"
+    return $IDFX_FAIL
+  fi
 
-		if [ -z $monitor_baud ]; then
-			idfx_err "Cannot obtain exact monitor baud rate"
-		else
-			additional_args+=" -b $monitor_baud"
-		fi
-	fi
-	
-	local monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path $additional_args -p $1 $elf_path")
-	powershell.exe -Command "$monitor_cmd"
+  local wsl_root="\\\\wsl\$\\$WSL_DISTRO_NAME"
+  local wsl_pwd=$(pwd)
+  local elf_path="/build/$IDFX_PROJECT_NAME.elf"
 
-	return $?
+  if [[ ${wsl_pwd:1:3} == 'mnt' ]]; then
+    local win_root="${wsl_pwd:5:1}:${wsl_pwd:6}"
+    elf_path="$win_root$elf_path"
+  else
+    elf_path="$wsl_root$wsl_pwd$elf_path"
+  fi
+
+  local additional_args=''
+
+  if grep -qF "address_decoding" "$idf_monitor_path"; then
+    additional_args+=" --disable-address-decoding"
+  fi
+
+  if [[ $IDFX_TARGET == 'esp8266' ]]; then
+    local project_config_file="build/config/sdkconfig.json"
+    local monitor_baud=''
+
+    if ! [ -f "$project_config_file" ]; then
+      idfx_err "Warning: Config file missing at path: $project_config_file"
+    else
+      monitor_baud=$(cat build/config/sdkconfig.json | python -c "import sys, json; _conf=json.load(sys.stdin); print(_conf.get('ESP_CONSOLE_UART_BAUDRATE', ''))")
+    fi
+
+    if [ -z $monitor_baud ]; then
+      idfx_err "Cannot obtain exact monitor baud rate"
+    else
+      additional_args+=" -b $monitor_baud"
+    fi
+  fi
+
+  local monitor_cmd=$(echo "python.exe $wsl_root/$idf_monitor_path $additional_args -p ${port} $elf_path")
+  powershell.exe -Command "$monitor_cmd"
+
+  return $?
 }
 
-if [ $# -eq 1 ]; then
-	if [[ $1 == 'build' ]]; then
-		idfx_build
-	else
-		IDFX_NEEDS_HELP=1
-	fi
-elif [[ $# -gt 1 && $# -lt 4 ]]; then
-	case $1 in
-		'all')
-			idfx_build && idfx_flash $2 && idfx_monitor $2
-			;;
-		
-		'flash')
-			idfx_flash $2
+idfx_forward_to_idfpy() {
+  idfx_check_proj
 
-			if [[ $# == 3 && $3 == 'monitor' ]]; then
-				idfx_monitor $2
-			fi
-			;;
-		
-		'erase_flash')
-			idfx_erase_flash $2
-			;;
-		
-		'monitor')
-			idfx_monitor $2
-			;;
-		
-		*)
-			IDFX_NEEDS_HELP=1
-			;;
-	esac
-fi
+  for i in ${!IDFX_FORWARD_COMMANDS[@]}; do
+    if [[ "${IDFX_FORWARD_COMMANDS[$i]}" == "${1}" ]]; then
+      idf.py "${@}"
+      IDFX_IS_COMMAND_FORWARDED_TO_IDF_PY=1
+    fi
+  done
 
-if [[ $IDFX_NEEDS_HELP == 1 ]]; then
-	idfx_err 'Error: Wrong format'
-	idfx_err 'Usage:
-	idfx COMMAND [PORT]
-	
-	Commands:
-		build        Build the project (alias for `idf.py build`).
-		flash        Flash the project.
-		monitor      Display serial output.
-		all          Build, flash and monitor.
-		erase_flash  Erase entire flash.
-		
-	Example:
-		idfx all COM6'
-	
-	echo
-	exit $IDFX_FAIL
-fi
+  return $IDFX_OK
+}
+
+idfx_usage() {
+  idfx_err 'Usage: idfx COMMAND [PORT]
+
+  [PORT] is serial COM Port on the Windows.
+         Use the Device Manager to find your port.
+
+  Commands:
+    build            - Build the project.
+    flash            - Flash the project.
+    monitor          - Display serial output.
+    all              - Build, flash and monitor.
+    erase-flash      - Erase entire flash chip.
+    help             - Show the usage help.
+    set-target       - Set the chip target to build.
+    menuconfig       - Run "menuconfig" project configuration tool.
+    app              - Build only the app.
+    bootloader       - Build only bootloader.
+    clean            - Delete build output files from the build directory.
+    fullclean        - Delete the entire build directory contents.
+    size             - Print basic size information about the app.
+    size-components  - Print per-component size information.
+    size-files       - Print per-source-file size information.
+
+  Example:
+    idfx all COM6
+  '
+}
+
+idfx_main() {
+  shift $(($OPTIND-1))
+
+  local cmd=$1 port=$2
+
+  case "${cmd}" in
+    build)
+      idfx_build ;;
+    flash)
+      idfx_flash "${port}"
+
+      if [[ $? == 0 && "${3}" == 'monitor' ]]; then
+        idfx_monitor "${port}"
+      fi
+      ;;
+    monitor)
+      idfx_monitor "${port}" ;;
+    all)
+      idfx_build && idfx_flash "${port}" && idfx_monitor "${port}" ;;
+    'erase-flash')
+      idfx_erase_flash ${port} ;;
+    help)
+      idfx_usage ;;
+    *)
+      if [ -n "${1}" ]; then
+        idfx_forward_to_idfpy "${@}"
+      fi
+
+      if [[ $IDFX_IS_COMMAND_FORWARDED_TO_IDF_PY != 1 ]]; then
+        idfx_err 'Invalid or missing command'
+        idfx_usage
+      fi
+      ;;
+  esac
+}
+
+idfx_main "${@}"

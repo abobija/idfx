@@ -6,46 +6,53 @@ While there is [no support for USB devices on WSL2](https://github.com/microsoft
 
 > **Note:**<br>As a prerequisite for using this tool, [Python :snake:](https://www.python.org) needs to be installed on the Windows.
 
-# Usage
+# Supported ESP-IDF versions
 
-```sh
-idfx COMMAND [PORT]
-```
-
-- `COMMAND`s
-    - `build` - Build the project (alias for `idf.py build`).
-    - `flash` - Flash the project.
-    - `monitor` - Display serial output.
-    - `all` - Build project, flash and monitor serial output.
-    - `erase_flash` - Erase the entire flash content.
-- `PORT` - Serial COM Port on the Windows. Use Device Manager to find your port.
+`idfx` supports:
+- [ESP-IDF](https://github.com/espressif/esp-idf) version 4.0 and above
+- [ESP8266_SDK](https://github.com/espressif/ESP8266_RTOS_SDK) version 3.0 and above
 
 # Installation
 
 Execute next command inside of your WSL to install `idfx`
 
 ```sh
-wget https://raw.githubusercontent.com/abobija/idfx/main/idfx -O $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
+wget https://git.io/JyBgj -O $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
 ```
 
-# Supported ESP-IDF versions
+# Usage
 
-idfx supports:
-- [ESP-IDF](https://github.com/espressif/esp-idf) version 4.0 and above
-- [ESP8266_SDK](https://github.com/espressif/ESP8266_RTOS_SDK) version 3.0 and above
+Signature:
+
+```
+idfx COMMAND [PORT]
+```
+
+Where the `PORT` is serial COM Port on the Windows (use the Device Manager to find your port).
+
+For the full usage please execute next command:
+
+```
+idfx help
+```
 
 # Examples
 
+For most of the cases (when you edit the code of your application) you can use `idfx all COM2` because this command will build, flash and monitor your app, at once. Of course, you need to change `COM2` (in previous command) with correct COM port.
+
 | Command  | Description |
 | ------------- | ------------- |
-| `idfx build`  | Building project (alias for `idf.py build`) |
-| `idfx flash COM2`  | Flashing project using port `COM2` |
-| `idfx monitor COM2`  | Display serial output on the port `COM2` |
 | `idfx all COM2` | Build project, flash and monitor serial output, using port `COM2` |
+| `idfx build`  | Build project |
+| `idfx flash COM2`  | Flashing project using port `COM2` |
+| `idfx monitor COM2`  | Display serial output of port `COM2` |
 | `idfx flash COM2 monitor` | Flash project and display serial output, using port `COM2` |
-| `idfx erase_flash COM2` | Erase the entire flash, using port `COM2` |
+| `idfx erase-flash COM2` | Erase the entire flash, using port `COM2` |
+| `idfx help` | Show the `idfx` usage |
 
-# [How to install ESP-IDF on WSL2 and build/flash/monitor?](https://gist.github.com/abobija/2f11d1b2c7cb079bec4df6e2348d969f)
+# How to install ESP-IDF on WSL2
+
+On [this link](https://abobija.com/blog/electronics/esp-idf-on-wsl2) you can find complete tutorial about how to setup ESP-IDF under WSL2 and how to use `idfx` to build, flash and monitor your ESP application.
 
 # Preview
 
