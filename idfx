@@ -251,7 +251,8 @@ idfx_usage() {
     build            - Build the project.
     flash            - Flash the project.
     monitor          - Display serial output.
-    all              - Build, flash and monitor.
+    bflash           - Build and flash the project.
+    all              - Build, flash and monitor the project.
     erase-flash      - Erase entire flash chip.
     help             - Show the usage help.
     set-target       - Set the chip target to build.
@@ -286,6 +287,8 @@ idfx_main() {
       ;;
     monitor)
       idfx_monitor "${port}" ;;
+    bflash)
+      idfx_build && idfx_flash "${port}" ;;
     all)
       idfx_build && idfx_flash "${port}" && idfx_monitor "${port}" ;;
     'erase-flash')
