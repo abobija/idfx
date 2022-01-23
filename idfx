@@ -136,7 +136,9 @@ idfx_build() {
   idfx_check_proj
   idf.py build
 
-  if [ $? -eq 0 ]; then
+  local err=$?
+
+  if [ $err -eq 0 ]; then
     echo
     echo '┌───────────────────────────────────────────────┐'
     echo '│ Project build complete.                       │'
@@ -145,7 +147,7 @@ idfx_build() {
     echo
   fi
 
-  return $?
+  return $err
 }
 
 idfx_check_port() {
