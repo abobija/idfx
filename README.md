@@ -17,7 +17,7 @@ While there is [no support for USB devices on WSL2](https://github.com/microsoft
 Execute next command inside of your WSL to install `idfx`
 
 ```sh
-wget https://git.io/JyBgj -O $HOME/.local/bin/idfx && chmod u+x $HOME/.local/bin/idfx
+curl https://git.io/JyBgj --create-dirs -L -o $HOME/bin/idfx && chmod u+x $HOME/bin/idfx
 ```
 
 # Usage
