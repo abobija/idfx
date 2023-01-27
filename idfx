@@ -162,7 +162,7 @@ idfx_flash() {
   idfx_check_port "${1}"
 
   local cmd=$((echo "python.exe -m esptool -p ${1} -b 460800 --before default_reset --after hard_reset --chip $IDFX_TARGET write_flash "; cat build/flash_project_args) | tr '\n' ' ')
-  powershell.exe -Command "cd build ; $cmd"
+  powershell.exe -Command "cd $(wslpath -w build) ; $cmd"
 
   return $?
 }
