@@ -41,6 +41,7 @@ IDFX_STATUS_ENV=$IDFX_FAIL
 IDFX_STATUS_PROJ=$IDFX_FAIL
 IDFX_STATUS_BUILD_CONFIG=$IDFX_FAIL
 IDFX_STATUS_ESPTOOL=$IDFX_FAIL
+IDFX_STATUS_ESP_IDF_MONITOR=$IDFX_FAIL
 
 set -e
 
@@ -132,6 +133,34 @@ idfx_check_esptool() {
   return $IDFX_STATUS_ESPTOOL
 }
 
+idfx_check_esp_idf_monitor() {
+  if [ $IDFX_STATUS_ESP_IDF_MONITOR -eq $IDFX_OK ]; then return $IDFX_OK; fi
+
+  idfx_check_build_config
+
+  if ! command -v python.exe &> /dev/null; then
+    idfx_err 'Python needs to be installed on the Windows'
+    return $IDFX_FAIL
+  fi
+
+  if [[ $(python.exe -c 'import pkgutil; print(1 if pkgutil.find_loader("esp_idf_monitor") else 0)') != '1'* ]]; then
+    idfx_err 'Python package "esp_idf_monitor" needs to be installed on the Windows.'
+    read -p 'Would you like to install it now (y/n): ' answer
+
+    if [[ "$answer" == 'y' ]]; then
+      idfx_err 'Ok. Installing esp_idf_monitor...'
+      pip.exe install esp_idf_monitor
+      if [[ $? != 0 ]]; then return $?; fi
+    else
+      idfx_err 'Sorry but esp_idf_monitor needs to be installed'
+      return $IDFX_FAIL
+    fi
+  fi
+
+  IDFX_STATUS_ESP_IDF_MONITOR=$IDFX_OK
+  return $IDFX_STATUS_ESP_IDF_MONITOR
+}
+
 idfx_build() {
   idfx_check_proj
   idf.py build
@@ -179,6 +208,7 @@ idfx_erase_flash() {
 
 idfx_monitor() {
   idfx_check_esptool
+  idfx_check_esp_idf_monitor
   idfx_check_port "${1}"
 
   local port="${1}"
